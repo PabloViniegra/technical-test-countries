@@ -1,103 +1,123 @@
-import Image from "next/image";
+"use client";
+
+import Background from "@/components/Background";
+import { useCountries } from "@/hooks/useCountries";
+import DashboardCountries from "@/components/DashboardCountries";
+import { Spinner, addToast } from "@heroui/react";
+import SearchBar from "@/components/SearchBar";
+import CustomPagination from "@/components/CustomPagination";
+import PanelFilter from "@/components/PanelFilter";
+import { useCallback, useState } from "react";
+import { Earth } from 'lucide-react';
+import CustomNavbar from "@/components/CustomNavbar";
 
 export default function Home() {
-  return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+  const [searchQuery, setSearchQuery] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [region, setRegion] = useState<string | null>(null);
+  const [language, setLanguage] = useState<string | null>(null);
+  const [currency, setCurrency] = useState<string | null>(null);
+  const { countries, isLoading, error, totalPages, totalItems } = useCountries({
+    searchQuery,
+    currentPage,
+    region,
+    language,
+    currency,
+  });
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
+  const handlePageChange = useCallback((page: number) => {
+    setCurrentPage(page);
+  }, []);
+
+  const handleSearch = useCallback((query: string) => {
+    setSearchQuery(query);
+    setCurrentPage(1);
+  }, []);
+
+  const handleRegionChange = useCallback((region: string) => {
+    setRegion(region);
+    setCurrentPage(1);
+  }, []);
+
+  const handleLanguageChange = useCallback((language: string) => {
+    setLanguage(language);
+    setCurrentPage(1);
+  }, []);
+
+  const handleCurrencyChange = useCallback((currency: string) => {
+    setCurrency(currency);
+    setCurrentPage(1);
+  }, []);
+
+  if (isLoading && !countries)
+    return (
+      <div className="flex flex-col justify-center items-center h-screen mx-auto">
+        <Spinner
+          classNames={{ label: "text-foreground mt-4" }}
+          variant="simple"
+        />
+      </div>
+    );
+  if (error) {
+    return addToast({
+      title: "Error",
+      description: error,
+      variant: "solid",
+      color: "danger",
+    });
+  }
+
+  return (
+    <Background>
+      <CustomNavbar />
+      <main className="flex flex-col items-center gap-8 min-h-screen py-12 mx-auto">
+        <h1 className="text-5xl md:text-7xl font-extrabold font-sans tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-white/80 via-gray-500 to-gray-500 drop-shadow-lg mb-6 text-center">
+          Countries of the world
+        </h1>
+        <div className="w-full max-w-2xl flex flex-col md:flex-row items-stretch md:items-end gap-3 md:gap-4 mb-4 mx-auto">
+          <div className="flex-1">
+            <SearchBar value={searchQuery} onChange={handleSearch} />
+          </div>
+          <div className="flex-none md:ml-2">
+            <PanelFilter
+              countries={countries}
+              onRegionChange={handleRegionChange}
+              onLanguageChange={handleLanguageChange}
+              onCurrencyChange={handleCurrencyChange}
+              selectedRegion={region || ""}
+              selectedLanguage={language || ""}
+              selectedCurrency={currency || ""}
             />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+          </div>
         </div>
+        {countries.length > 0 ? (
+          <DashboardCountries
+            countries={countries}
+            isLoading={isLoading}
+            searchQuery={searchQuery}
+          />
+        ) : (
+          <div className="flex flex-col items-center h-screen mx-auto my-[15%]">
+            <p className="text-gray-300 text-md font-sans-serif font-medium tracking-tight">
+              No se encontraron países
+            </p>
+            <Earth className="size-8 mt-1" />
+          </div>
+        )}
+        {totalPages > 1 && (
+          <CustomPagination
+            total={totalPages}
+            page={currentPage}
+            onChange={handlePageChange}
+          />
+        )}
+        {totalItems > 0 && (
+          <div className="font-mono text-center text-sm text-gray-500 dark:text-gray-400 mt-4">
+            Mostrando {Math.min((currentPage - 1) * 12 + 1, totalItems)}-
+            {Math.min(currentPage * 12, totalItems)} de {totalItems} países
+          </div>
+        )}
       </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
+    </Background>
   );
 }
