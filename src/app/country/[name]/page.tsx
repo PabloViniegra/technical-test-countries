@@ -103,7 +103,7 @@ export default function Country({ params }: CountryPageProps) {
               target="_blank"
               rel="noopener noreferrer"
             >
-              Ver en Google Maps
+              View on Google Maps
             </Button>
           </CardFooter>
         </Card>
